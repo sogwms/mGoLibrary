@@ -8,5 +8,6 @@ import (
 
 func main() {
 
-	fmt.Println(ico.GetWebsiteIcoInBase64("148.70.51.171"))
+	fmt.Println(ico.GetWebsiteIcoInBase64("https://shoat"))
+	fmt.Println(ico.GetError())
 }

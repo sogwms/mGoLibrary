@@ -14,6 +14,8 @@ import (
 	_ "github.com/biessek/golang-ico"
 )
 
+var lastError error
+
 // 伪装浏览器访问
 func httpRequest(url string) ([]byte, error) {
 	request, err := http.NewRequest("GET", url, nil)
@@ -76,6 +78,7 @@ func GetIcoInBase64(url string) string {
 
 	if err != nil {
 		fmt.Println(err)
+		lastError = err
 	}
 
 	return img
@@ -97,7 +100,12 @@ func GetWebsiteIcoInBase64(host string) string {
 
 	if err != nil {
 		fmt.Println(err)
+		lastError = err
 	}
 
 	return img
+}
+
+func GetError() error {
+	return lastError
 }
