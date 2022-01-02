@@ -97,10 +97,16 @@ func getWebsiteIconUrl(host string) string {
 	}
 	data, _ := io.ReadAll(resp.Body)
 
-	re := regexp.MustCompile(`<link\s*rel\s*=\s*"shortcut\s*icon"\s*href\s*=\s*"(.*)"\s*>`)
+	re := regexp.MustCompile(`<link\s*rel\s*=\s*"\s*(?:shortcut)?\s*icon"\s*href\s*=\s*"(\S*)"\s*/?>`)
+
 	matched := re.FindSubmatch(data)
 	if matched != nil {
-		return string(matched[1])
+		addr := string(matched[1])
+		if addr[0] != 'h' {
+			return host + addr
+		} else {
+			return addr
+		}
 	}
 
 	return host + "/favicon.ico"
@@ -116,6 +122,7 @@ func GetWebsiteIcoInBase64(host string) string {
 		hostAddr = parts[0] + "//" + parts[2]
 	}
 
+	fmt.Println("host: ", hostAddr)
 	url := getWebsiteIconUrl(hostAddr)
 	fmt.Println("icon-url:", url)
 

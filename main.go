@@ -8,7 +8,7 @@ import (
 
 func main() {
 
-	fmt.Println(ico.GetWebsiteIcoInBase64("https://www.dingmos.com/favicon.ico"))
+	fmt.Println(ico.GetWebsiteIcoInBase64("https://www.dingmos.com/"))
 	fmt.Println(ico.GetError())
 
 	// url := "https://www.dingmos.com/usr/themes/Akina/images/d_logo.png"
