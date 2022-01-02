@@ -1,4 +1,4 @@
-module m
+module github.com/sogwms/mGoLibrary
 
 go 1.17
 
