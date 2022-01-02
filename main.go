@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
-	"m/ico"
+
+	"github.com/sogwms/mGoLibrary/ico"
 )
 
 func main() {
-	fmt.Println(ico.GetIcoBase64ByHttp("https://tiddlywiki.com"))
+
+	fmt.Println(ico.GetWebsiteIcoInBase64("148.70.51.171"))
 }

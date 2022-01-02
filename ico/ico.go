@@ -5,9 +5,11 @@ import (
 	"encoding/base64"
 	"fmt"
 	"image"
+	_ "image/jpeg"
 	"image/png"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	_ "github.com/biessek/golang-ico"
 )
@@ -21,7 +23,8 @@ func httpRequest(url string) []byte {
 
 	request.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9")
 	request.Header.Add("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6")
-	request.Header.Add("Accept-encoding", "gzip, deflate, br")
+	/*避免不必要的解压缩*/
+	// request.Header.Add("Accept-encoding", "gzip, deflate, br")
 	request.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36 Edg/96.0.1054.62")
 
 	client := http.Client{}
@@ -39,8 +42,8 @@ func httpRequest(url string) []byte {
 	return body
 }
 
-func getIcoByHttp(host string) []byte {
-	return httpRequest(host + "/favicon.ico")
+func getIcoByHttp(url string) []byte {
+	return httpRequest(url)
 }
 
 func convertIcoToPng(ico []byte) []byte {
@@ -60,6 +63,21 @@ func encodeImageByBase64(ico []byte) string {
 	return "data:image/png;base64," + base64.StdEncoding.EncodeToString(ico)
 }
 
-func GetIcoBase64ByHttp(host string) string {
-	return encodeImageByBase64(convertIcoToPng(getIcoByHttp(host)))
+func GetIcoInBase64(url string) string {
+	return encodeImageByBase64(convertIcoToPng(getIcoByHttp(url)))
+}
+
+func GetWebsiteIcoInBase64(host string) string {
+	url := "/favicon.ico"
+
+	if host[0] >= '0' && host[0] <= '9' {
+		url = "http://" + host + url
+	} else {
+		parts := strings.Split(host, "/")
+		url = parts[0] + "//" + parts[2] + url
+	}
+
+	fmt.Println(url)
+
+	return encodeImageByBase64(convertIcoToPng(getIcoByHttp(url)))
 }
