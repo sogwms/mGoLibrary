@@ -8,8 +8,10 @@ import (
 	"image"
 	_ "image/jpeg"
 	"image/png"
+	"io"
 	"io/ioutil"
 	"net/http"
+	"regexp"
 	"strings"
 
 	_ "github.com/biessek/golang-ico"
@@ -88,17 +90,34 @@ func GetIcoInBase64(url string) string {
 	return img
 }
 
-func GetWebsiteIcoInBase64(host string) string {
-	url := "/favicon.ico"
+func getWebsiteIconUrl(host string) string {
+	resp, err := http.Get(host)
+	if err != nil {
+		return ""
+	}
+	data, _ := io.ReadAll(resp.Body)
 
-	if host[0] >= '0' && host[0] <= '9' {
-		url = "http://" + host + url
-	} else {
-		parts := strings.Split(host, "/")
-		url = parts[0] + "//" + parts[2] + url
+	re := regexp.MustCompile(`<link\s*rel\s*=\s*"shortcut\s*icon"\s*href\s*=\s*"(.*)"\s*>`)
+	matched := re.FindSubmatch(data)
+	if matched != nil {
+		return string(matched[1])
 	}
 
-	fmt.Println(url)
+	return host + "/favicon.ico"
+}
+
+func GetWebsiteIcoInBase64(host string) string {
+
+	hostAddr := ""
+	if host[0] >= '0' && host[0] <= '9' {
+		hostAddr = "http://" + host
+	} else {
+		parts := strings.Split(host, "/")
+		hostAddr = parts[0] + "//" + parts[2]
+	}
+
+	url := getWebsiteIconUrl(hostAddr)
+	fmt.Println("icon-url:", url)
 
 	img, err := encodeImageByBase64(convertIcoToPng(getIcoByHttp(url)))
 
