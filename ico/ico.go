@@ -3,6 +3,7 @@ package ico
 import (
 	"bytes"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"image"
 	_ "image/jpeg"
@@ -33,6 +34,9 @@ func httpRequest(url string) ([]byte, error) {
 	response, err := client.Do(request)
 	if err != nil {
 		return []byte{}, err
+	}
+	if response.StatusCode != 200 {
+		return []byte{}, errors.New(response.Status)
 	}
 	defer response.Body.Close()
 
