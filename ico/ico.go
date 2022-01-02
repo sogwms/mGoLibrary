@@ -15,10 +15,10 @@ import (
 )
 
 // 伪装浏览器访问
-func httpRequest(url string) []byte {
+func httpRequest(url string) ([]byte, error) {
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return []byte{}
+		return []byte{}, err
 	}
 
 	request.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9")
@@ -30,41 +30,55 @@ func httpRequest(url string) []byte {
 	client := http.Client{}
 	response, err := client.Do(request)
 	if err != nil {
-		return []byte{}
+		return []byte{}, err
 	}
 	defer response.Body.Close()
 
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		return []byte{}
+		return []byte{}, err
 	}
 
-	return body
+	return body, nil
 }
 
-func getIcoByHttp(url string) []byte {
+func getIcoByHttp(url string) ([]byte, error) {
 	return httpRequest(url)
 }
 
-func convertIcoToPng(ico []byte) []byte {
+func convertIcoToPng(ico []byte, e error) ([]byte, error) {
+	if e != nil {
+		return nil, e
+	}
+
 	tmp := new(bytes.Buffer)
 	tmp.Write(ico)
 	img, _, err := image.Decode(tmp)
 	if err != nil {
-		fmt.Println(err)
+		return nil, err
 	}
 	buffer := new(bytes.Buffer)
 
 	png.Encode(buffer, img)
-	return buffer.Bytes()
+	return buffer.Bytes(), nil
 }
 
-func encodeImageByBase64(ico []byte) string {
-	return "data:image/png;base64," + base64.StdEncoding.EncodeToString(ico)
+func encodeImageByBase64(ico []byte, e error) (string, error) {
+	if e != nil {
+		return "", e
+	}
+
+	return "data:image/png;base64," + base64.StdEncoding.EncodeToString(ico), nil
 }
 
 func GetIcoInBase64(url string) string {
-	return encodeImageByBase64(convertIcoToPng(getIcoByHttp(url)))
+	img, err := encodeImageByBase64(convertIcoToPng(getIcoByHttp(url)))
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return img
 }
 
 func GetWebsiteIcoInBase64(host string) string {
@@ -79,5 +93,11 @@ func GetWebsiteIcoInBase64(host string) string {
 
 	fmt.Println(url)
 
-	return encodeImageByBase64(convertIcoToPng(getIcoByHttp(url)))
+	img, err := encodeImageByBase64(convertIcoToPng(getIcoByHttp(url)))
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return img
 }
