@@ -97,7 +97,7 @@ func getWebsiteIconUrl(host string) string {
 	}
 	data, _ := io.ReadAll(resp.Body)
 
-	re := regexp.MustCompile(`<link\s*rel\s*=\s*"\s*(?:shortcut)?\s*icon"\s*href\s*=\s*"(\S*)"\s*/?>`)
+	re := regexp.MustCompile(`<link\s*rel\s*=\s*"\s*(?:shortcut)?\s*icon".*href\s*=\s*"(\S*)"\s*/?>`)
 
 	matched := re.FindSubmatch(data)
 	if matched != nil {
