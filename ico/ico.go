@@ -11,9 +11,9 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"regexp"
 	"strings"
 
+	"github.com/anaskhan96/soup"
 	_ "github.com/biessek/golang-ico"
 )
 
@@ -97,19 +97,24 @@ func getWebsiteIconUrl(host string) string {
 	}
 	data, _ := io.ReadAll(resp.Body)
 
-	re := regexp.MustCompile(`<link\s*rel\s*=\s*"\s*(?:shortcut)?\s*icon".*href\s*=\s*"(\S*)".*/?>`)
-
-	matched := re.FindSubmatch(data)
-	if matched != nil {
-		addr := string(matched[1])
-		if addr[0] != 'h' {
-			return host + addr
-		} else {
-			return addr
+	var iconAddr string
+	doc := soup.HTMLParse(string(data))
+	links := doc.Find("head").FindAll("link")
+	for _, link := range links {
+		if strings.Contains(link.Attrs()["rel"], "icon") {
+			iconAddr = link.Attrs()["href"]
 		}
 	}
 
-	return host + "/favicon.ico"
+	if iconAddr == "" {
+		return host + "/favicon.ico"
+	} else {
+		if iconAddr[0] != 'h' {
+			return host + iconAddr
+		} else {
+			return iconAddr
+		}
+	}
 }
 
 func GetWebsiteIcoInBase64(host string) string {
