@@ -8,7 +8,9 @@ import (
 
 func main() {
 
-	fmt.Println(ico.GetWebsiteIcoInBase64("https://wordpress.org/"))
+	
+	fmt.Println(ico.GetWebsiteIcoInBase64("https://www.jenkins.io/"))
+	// fmt.Println(ico.GetWebsiteIcoInBase64("https://wordpress.org/"))
 	// fmt.Println(ico.GetWebsiteIcoInBase64("https://riscv.org/"))
 	// fmt.Println(ico.GetWebsiteIcoInBase64("https://khalilstemmler.com/articles/software-design-architecture/full-stack-software-design/"))
 	// fmt.Println(ico.GetWebsiteIcoInBase64("https://www.code-nav.cn/"))

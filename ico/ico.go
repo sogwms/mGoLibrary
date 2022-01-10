@@ -147,8 +147,17 @@ func GetWebsiteIcoInBase64(host string) string {
 	img, err := encodeImageByBase64(convertIcoToPng(getIcoByHttp(url)))
 
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("failed:", err)
 		lastError = err
+
+		// try favicon.ico
+		if !strings.Contains(url, "favicon.ico") {
+			fmt.Println(`Try "favicon.ico"`)
+			res := GetIcoInBase64(hostAddr + "/favicon.ico")
+			if res != "" {
+				return res
+			}
+		}
 	}
 
 	return img
