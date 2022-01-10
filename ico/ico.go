@@ -110,6 +110,19 @@ func getWebsiteIconUrl(host string) string {
 		return host + "/favicon.ico"
 	} else {
 		if iconAddr[0] != 'h' {
+			// 特殊地址标记处理
+			// case: '//'
+			idx := strings.Index(iconAddr, "//")
+			if idx == 0 {
+				var protocol string
+				if host[4] == 's' {
+					protocol = "https"
+				} else {
+					protocol = "http"
+				}
+				return protocol + ":" + iconAddr
+			}
+
 			return host + iconAddr
 		} else {
 			return iconAddr
