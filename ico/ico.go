@@ -10,12 +10,21 @@ import (
 	"image/png"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/anaskhan96/soup"
 	_ "github.com/biessek/golang-ico"
 )
+
+// steps:
+//       1. fetch page
+//       2. get raw icon link (parse page)
+//       3. get full icon url
+//       4. fetch icon by url
+//       5. deal ...
 
 var lastError error
 
@@ -79,7 +88,7 @@ func encodeImageByBase64(ico []byte, e error) (string, error) {
 	return "data:image/png;base64," + base64.StdEncoding.EncodeToString(ico), nil
 }
 
-func GetIcoInBase64(url string) string {
+func GetIcoInBase64(url string) (string, error) {
 	img, err := encodeImageByBase64(convertIcoToPng(getIcoByHttp(url)))
 
 	if err != nil {
@@ -87,7 +96,7 @@ func GetIcoInBase64(url string) string {
 		lastError = err
 	}
 
-	return img
+	return img, err
 }
 
 func getWebsiteIconUrl(host string) string {
@@ -100,9 +109,15 @@ func getWebsiteIconUrl(host string) string {
 	var iconAddr string
 	doc := soup.HTMLParse(string(data))
 	links := doc.Find("head").FindAll("link")
+
+	// serarch `icon` or `shortcut icon` exactly
 	for _, link := range links {
-		if strings.Contains(link.Attrs()["rel"], "icon") {
+		ts := link.Attrs()["rel"]
+		ts = strings.TrimSpace(ts)
+		if ts == "icon" || ts == "shortcut icon" {
 			iconAddr = link.Attrs()["href"]
+			fmt.Println("raw-icon-url", iconAddr)
+			break
 		}
 	}
 
@@ -123,6 +138,9 @@ func getWebsiteIconUrl(host string) string {
 				return protocol + ":" + iconAddr
 			}
 
+			if iconAddr[0] != '/' {
+				return host + "/" + iconAddr
+			}
 			return host + iconAddr
 		} else {
 			return iconAddr
@@ -141,21 +159,21 @@ func GetWebsiteIcoInBase64(host string) string {
 	}
 
 	fmt.Println("host: ", hostAddr)
-	url := getWebsiteIconUrl(hostAddr)
-	fmt.Println("icon-url:", url)
+	iconUrl := getWebsiteIconUrl(hostAddr)
+	fmt.Println("icon-url:", iconUrl)
 
-	img, err := encodeImageByBase64(convertIcoToPng(getIcoByHttp(url)))
+	img, err := GetIcoInBase64(iconUrl)
 
 	if err != nil {
 		fmt.Println("failed:", err)
 		lastError = err
 
 		// try favicon.ico
-		if !strings.Contains(url, "favicon.ico") {
+		if !strings.Contains(iconUrl, "favicon.ico") {
 			fmt.Println(`Try "favicon.ico"`)
-			res := GetIcoInBase64(hostAddr + "/favicon.ico")
-			if res != "" {
-				return res
+			img, err := GetIcoInBase64(hostAddr + "/favicon.ico")
+			if err == nil {
+				return img
 			}
 		}
 	}
@@ -165,4 +183,29 @@ func GetWebsiteIcoInBase64(host string) string {
 
 func GetError() error {
 	return lastError
+}
+
+func ClearError() {
+	lastError = nil
+}
+
+func FetchRawPageToFile(url string, file string) {
+	resp, err := http.Get(url)
+	if err != nil {
+		fmt.Println(err)
+	}
+	data, _ := io.ReadAll(resp.Body)
+
+	f, err := os.Create(file)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer f.Close()
+
+	_, err2 := f.WriteString(string(data))
+
+	if err2 != nil {
+		log.Fatal(err2)
+	}
 }
