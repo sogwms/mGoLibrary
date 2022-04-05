@@ -5,6 +5,7 @@ go 1.17
 require (
 	github.com/anaskhan96/soup v1.2.4
 	github.com/biessek/golang-ico v0.0.0-20180326222316-d348d9ea4670
+	github.com/robfig/cron/v3 v3.0.0
 )
 
 require (
