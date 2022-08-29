@@ -134,7 +134,25 @@ func (s *Sftp) ExecShellWithNewSession(cmd string) (string, error) {
 }
 
 // src:local, dest:remote
-func (s *Sftp) UploadFile(dest, src string) error {
+func (s *Sftp) Upload(dest string, src io.Reader) (int64, error) {
+	//  try to create the specific file on remote machine
+	destFile, err := s.sftp.Create(dest)
+	if err != nil {
+		return 0, err
+	}
+	defer destFile.Close()
+
+	// fianlly, write the data (streamly)
+	bc, err := io.Copy(destFile, src)
+	if err != nil {
+		return 0, err
+	}
+
+	return bc, nil
+}
+
+// src:local, dest:remote
+func (s *Sftp) UploadFromFile(dest, src string) error {
 	// try to open the local file first
 	srcFile, err := os.Open(src)
 	if err != nil {
@@ -142,21 +160,14 @@ func (s *Sftp) UploadFile(dest, src string) error {
 	}
 	defer srcFile.Close()
 
-	// and then try to create the specific file on remote machine
-	destFile, err := s.sftp.Create(dest)
-	if err != nil {
-		return err
-	}
-	defer destFile.Close()
-
-	// fianlly, write the data (streamly)
-	bc, err := io.Copy(destFile, srcFile)
+	size, err := s.Upload(dest, srcFile)
 	if err != nil {
 		return err
 	}
 
+	// verify transfer size
 	if localFileInfo, err := srcFile.Stat(); err == nil {
-		if bc != localFileInfo.Size() {
+		if size != localFileInfo.Size() {
 			return errors.New("unequal file size")
 		}
 	}
@@ -164,51 +175,50 @@ func (s *Sftp) UploadFile(dest, src string) error {
 	return nil
 }
 
-func (s *Sftp) UploadFileFromString(destFilename string, data string) error {
-	destFile, err := s.sftp.Create(destFilename)
-	if err != nil {
-		return err
-	}
-	defer destFile.Close()
-
+func (s *Sftp) UploadFromString(dest string, data string) error {
 	buffer := bytes.NewBufferString(data)
 
-	// fianlly, write the data (streamly)
-	bc, err := io.Copy(destFile, buffer)
+	_, err := s.Upload(dest, buffer)
 	if err != nil {
 		return err
-	}
-
-	if bc != int64(len(data)) {
-		return errors.New("unequal file size")
 	}
 
 	return nil
 }
 
-// filename: remote file name
-func (s *Sftp) DownloadFile(filename string) (io.Reader, error) {
+// filename: remote filename to download
+func (s *Sftp) Download(filename string) (io.ReadCloser, error) {
 	srcFile, err := s.sftp.OpenFile(filename, os.O_RDONLY)
 	if err != nil {
 		return nil, err
 	}
-	defer srcFile.Close()
 
-	data, err := io.ReadAll(srcFile)
+	return srcFile, nil
+}
+
+func (s *Sftp) DownloadByReader(filename string) (io.Reader, error) {
+	rc, err := s.Download(filename)
 	if err != nil {
 		return nil, err
 	}
+	defer rc.Close()
 
+	data, err := io.ReadAll(rc)
+	if err != nil {
+		return nil, err
+	}
 	buffer := bytes.NewBuffer(data)
 
 	return buffer, nil
 }
 
-func (s *Sftp) DownloadFileToLocal(dest, src string) error {
-	srcFile, err := s.DownloadFile(src)
+// dest: local filename, src: remote filename
+func (s *Sftp) DownloadToLocal(dest string, src string) error {
+	rc, err := s.Download(src)
 	if err != nil {
 		return err
 	}
+	defer rc.Close()
 
 	descFile, err := os.Create(dest)
 	if err != nil {
@@ -216,7 +226,7 @@ func (s *Sftp) DownloadFileToLocal(dest, src string) error {
 	}
 	defer descFile.Close()
 
-	if _, err := descFile.ReadFrom(srcFile); err != nil {
+	if _, err := descFile.ReadFrom(rc); err != nil {
 		return err
 	}
 
